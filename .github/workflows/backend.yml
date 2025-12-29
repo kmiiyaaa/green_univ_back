@@ -20,9 +20,15 @@ jobs:
           distribution: "temurin"
 
       - name: Create application.yml (render secrets)
+        env:
+          MYSQL_URL: ${{ secrets.MYSQL_URL }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
         run: |
           mkdir -p src/main/resources
-          cat > src/main/resources/application.yml <<'EOF'
+          cat > src/main/resources/application.yml <<EOF
 server:
   port: 8888
 
@@ -55,12 +61,6 @@ app:
       api-key: "${GEMINI_API_KEY}"
       url: "https://generativelanguage.googleapis.com/v1beta"
 EOF
-        env:
-          MYSQL_URL: ${{ secrets.MYSQL_URL }}
-          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
 
       - name: Grant execute permission for Gradle
         run: chmod +x ./gradlew
@@ -72,8 +72,7 @@ EOF
         run: |
           set -e
           mkdir -p deploy
-          # 멀티모듈/단일모듈 상관없이 build/libs 아래 jar 하나 찾기
-          JAR=$(find . -type f -path "*/build/libs/*.jar" ! -name "*-plain.jar" | head -n 1)
+          JAR="$(find . -type f -path "*/build/libs/*.jar" ! -name "*-plain.jar" | head -n 1)"
           if [ -z "$JAR" ]; then
             echo "❌ No jar found under */build/libs"
             find . -maxdepth 6 -type f -name "*.jar" -print
@@ -104,20 +103,20 @@ EOF
           script: |
             set -e
 
-            # scp-action이 폴더 구조를 만들 수 있어서 둘 다 대응
+            # scp-action이 deploy 폴더를 만들어 넣는 경우 대비
             if [ -f /home/ubuntu/greenuniv/build/libs/deploy/app.jar ]; then
               sudo mv -f /home/ubuntu/greenuniv/build/libs/deploy/app.jar /home/ubuntu/greenuniv/build/libs/app.jar
               sudo rmdir /home/ubuntu/greenuniv/build/libs/deploy || true
             fi
 
-            # 혹시 바로 떨어진 경우도 체크
-            if [ -f /home/ubuntu/greenuniv/build/libs/app.jar ]; then
-              sudo chown ubuntu:ubuntu /home/ubuntu/greenuniv/build/libs/app.jar
-            else
+            # 바로 app.jar로 떨어진 경우도 OK
+            if [ ! -f /home/ubuntu/greenuniv/build/libs/app.jar ]; then
               echo "❌ app.jar not found after scp"
               ls -al /home/ubuntu/greenuniv/build/libs
               exit 1
             fi
+
+            sudo chown ubuntu:ubuntu /home/ubuntu/greenuniv/build/libs/app.jar
 
             sudo systemctl daemon-reload
             sudo systemctl restart backend.service
