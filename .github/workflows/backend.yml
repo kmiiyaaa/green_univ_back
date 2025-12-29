@@ -75,7 +75,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
           port: 22
-          source: "build/libs/*.jar"
+          source: "**/build/libs/*.jar"
           target: "/home/ubuntu/greenuniv/build/libs/"
           overwrite: true
 
