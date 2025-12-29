@@ -88,22 +88,26 @@ jobs:
           port: 22
           script: |
             set -e
-
+          
             echo "==> jars on server"
             ls -al /home/ubuntu/greenuniv/build/libs
-
-            echo "==> set app.jar (exclude -plain.jar, pick largest)"
-            JAR=$(ls -1S /home/ubuntu/greenuniv/build/libs/*.jar | grep -v -- '-plain\.jar$' | head -n 1)
+          
+            echo "==> set app.jar (exclude app.jar and -plain.jar, pick largest)"
+            JAR=$(ls -1S /home/ubuntu/greenuniv/build/libs/*.jar \
+              | grep -v -- '/app\.jar$' \
+              | grep -v -- '-plain\.jar$' \
+              | head -n 1)
+          
             echo "Using jar: $JAR"
-
+          
             sudo cp -f "$JAR" /home/ubuntu/greenuniv/build/libs/app.jar
             sudo chown ubuntu:ubuntu /home/ubuntu/greenuniv/build/libs/app.jar
             ls -al /home/ubuntu/greenuniv/build/libs/app.jar
-
+          
             echo "==> reload & restart"
             sudo systemctl daemon-reload
             sudo systemctl restart backend.service
             sudo systemctl status backend.service --no-pager
-
+          
             echo "==> last logs"
             sudo journalctl -u backend.service -n 120 --no-pager
