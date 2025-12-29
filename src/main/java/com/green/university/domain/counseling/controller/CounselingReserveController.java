@@ -176,7 +176,7 @@ public class CounselingReserveController {
 
     }
 
-    // 상담 진행 중 - 남은 시간 확인용
+    // 상담 진행 중 - 남은 시간 확인
     @GetMapping("/timeCheck")
     public ResponseEntity<?> timeCheck(@RequestParam("roomCode") String roomCode) {
 
