@@ -22,39 +22,39 @@ jobs:
       - name: Create application.yml (render secrets)
         run: |
           mkdir -p src/main/resources
-          cat > src/main/resources/application.yml <<EOF
-          server:
-            port: 8888
+          cat > src/main/resources/application.yml <<'EOF'
+server:
+  port: 8888
 
-          spring:
-            jackson:
-              time-zone: Asia/Seoul
+spring:
+  jackson:
+    time-zone: Asia/Seoul
 
-            datasource:
-              driver-class-name: com.mysql.cj.jdbc.Driver
-              url: "${MYSQL_URL}"
-              username: admin
-              password: "${MYSQL_PASSWORD}"
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: "${MYSQL_URL}"
+    username: admin
+    password: "${MYSQL_PASSWORD}"
 
-            jpa:
-              hibernate:
-                ddl-auto: update
-              properties:
-                hibernate:
-                  format_sql: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
 
-          jwt:
-            secret: "${JWT_SECRET}"
+jwt:
+  secret: "${JWT_SECRET}"
 
-          app:
-            ai:
-              mistral:
-                api-key: "${MISTRAL_API_KEY}"
-                url: "https://api.mistral.ai/v1"
-              gemini:
-                api-key: "${GEMINI_API_KEY}"
-                url: "https://generativelanguage.googleapis.com/v1beta"
-          EOF
+app:
+  ai:
+    mistral:
+      api-key: "${MISTRAL_API_KEY}"
+      url: "https://api.mistral.ai/v1"
+    gemini:
+      api-key: "${GEMINI_API_KEY}"
+      url: "https://generativelanguage.googleapis.com/v1beta"
+EOF
         env:
           MYSQL_URL: ${{ secrets.MYSQL_URL }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
@@ -68,6 +68,21 @@ jobs:
       - name: Build Spring Boot (skip test)
         run: ./gradlew clean build -x test
 
+      - name: Prepare deploy jar
+        run: |
+          set -e
+          mkdir -p deploy
+          # 멀티모듈/단일모듈 상관없이 build/libs 아래 jar 하나 찾기
+          JAR=$(find . -type f -path "*/build/libs/*.jar" ! -name "*-plain.jar" | head -n 1)
+          if [ -z "$JAR" ]; then
+            echo "❌ No jar found under */build/libs"
+            find . -maxdepth 6 -type f -name "*.jar" -print
+            exit 1
+          fi
+          echo "✅ Found jar: $JAR"
+          cp "$JAR" deploy/app.jar
+          ls -al deploy
+
       - name: Copy Jar to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -75,7 +90,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
           port: 22
-          source: "**/build/libs/*.jar"
+          source: "deploy/app.jar"
           target: "/home/ubuntu/greenuniv/build/libs/"
           overwrite: true
 
@@ -89,16 +104,22 @@ jobs:
           script: |
             set -e
 
-            cd /home/ubuntu/greenuniv/build/libs
+            # scp-action이 폴더 구조를 만들 수 있어서 둘 다 대응
+            if [ -f /home/ubuntu/greenuniv/build/libs/deploy/app.jar ]; then
+              sudo mv -f /home/ubuntu/greenuniv/build/libs/deploy/app.jar /home/ubuntu/greenuniv/build/libs/app.jar
+              sudo rmdir /home/ubuntu/greenuniv/build/libs/deploy || true
+            fi
 
-            # 새로 올라온 jar 중 app.jar / -plain.jar 제외하고 하나 선택
-            JAR=$(ls -1t *.jar | grep -v '^app\.jar$' | grep -v -- '-plain\.jar$' | head -n 1)
-            echo "Using jar: $JAR"
-
-            sudo cp -f "$JAR" app.jar
-            sudo chown ubuntu:ubuntu app.jar
+            # 혹시 바로 떨어진 경우도 체크
+            if [ -f /home/ubuntu/greenuniv/build/libs/app.jar ]; then
+              sudo chown ubuntu:ubuntu /home/ubuntu/greenuniv/build/libs/app.jar
+            else
+              echo "❌ app.jar not found after scp"
+              ls -al /home/ubuntu/greenuniv/build/libs
+              exit 1
+            fi
 
             sudo systemctl daemon-reload
             sudo systemctl restart backend.service
             sudo systemctl status backend.service --no-pager
-            sudo journalctl -u backend.service -n 60 --no-pager
+            sudo journalctl -u backend.service -n 80 --no-pager
