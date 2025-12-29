@@ -1,6 +1,6 @@
 name: Backend CI/CD
 
-on:
+"on":
   push:
     branches:
       - km-251222-build
@@ -72,13 +72,12 @@ EOF
         run: |
           set -e
           mkdir -p deploy
-          JAR="$(find . -type f -path "*/build/libs/*.jar" ! -name "*-plain.jar" | head -n 1)"
+          JAR=$(find . -type f -path "*/build/libs/*.jar" ! -name "*-plain.jar" | head -n 1)
           if [ -z "$JAR" ]; then
-            echo "❌ No jar found under */build/libs"
+            echo "No jar found under */build/libs"
             find . -maxdepth 6 -type f -name "*.jar" -print
             exit 1
           fi
-          echo "✅ Found jar: $JAR"
           cp "$JAR" deploy/app.jar
           ls -al deploy
 
@@ -89,8 +88,8 @@ EOF
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
           port: 22
-          source: "deploy/app.jar"
-          target: "/home/ubuntu/greenuniv/build/libs/"
+          source: deploy/app.jar
+          target: /home/ubuntu/greenuniv/build/libs/
           overwrite: true
 
       - name: Activate Jar and Restart Service
@@ -103,15 +102,13 @@ EOF
           script: |
             set -e
 
-            # scp-action이 deploy 폴더를 만들어 넣는 경우 대비
             if [ -f /home/ubuntu/greenuniv/build/libs/deploy/app.jar ]; then
               sudo mv -f /home/ubuntu/greenuniv/build/libs/deploy/app.jar /home/ubuntu/greenuniv/build/libs/app.jar
               sudo rmdir /home/ubuntu/greenuniv/build/libs/deploy || true
             fi
 
-            # 바로 app.jar로 떨어진 경우도 OK
             if [ ! -f /home/ubuntu/greenuniv/build/libs/app.jar ]; then
-              echo "❌ app.jar not found after scp"
+              echo "app.jar not found"
               ls -al /home/ubuntu/greenuniv/build/libs
               exit 1
             fi
