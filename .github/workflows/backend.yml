@@ -32,9 +32,9 @@ jobs:
 
             datasource:
               driver-class-name: com.mysql.cj.jdbc.Driver
-              url: ${MYSQL_URL}
+              url: "${MYSQL_URL}"
               username: admin
-              password: ${MYSQL_PASSWORD}
+              password: "${MYSQL_PASSWORD}"
 
             jpa:
               hibernate:
@@ -44,16 +44,16 @@ jobs:
                   format_sql: true
 
           jwt:
-            secret: ${JWT_SECRET}
+            secret: "${JWT_SECRET}"
 
           app:
             ai:
               mistral:
-                api-key: ${MISTRAL_API_KEY}
-                url: https://api.mistral.ai/v1
+                api-key: "${MISTRAL_API_KEY}"
+                url: "https://api.mistral.ai/v1"
               gemini:
-                api-key: ${GEMINI_API_KEY}
-                url: https://generativelanguage.googleapis.com/v1beta
+                api-key: "${GEMINI_API_KEY}"
+                url: "https://generativelanguage.googleapis.com/v1beta"
           EOF
         env:
           MYSQL_URL: ${{ secrets.MYSQL_URL }}
@@ -92,9 +92,12 @@ jobs:
             echo "==> jars on server"
             ls -al /home/ubuntu/greenuniv/build/libs
 
-            echo "==> set app.jar"
-            JAR=$(ls -1 /home/ubuntu/greenuniv/build/libs/*.jar | head -n 1)
+            echo "==> set app.jar (exclude -plain.jar, pick largest)"
+            JAR=$(ls -1S /home/ubuntu/greenuniv/build/libs/*.jar | grep -v -- '-plain\.jar$' | head -n 1)
+            echo "Using jar: $JAR"
+
             sudo cp -f "$JAR" /home/ubuntu/greenuniv/build/libs/app.jar
+            sudo chown ubuntu:ubuntu /home/ubuntu/greenuniv/build/libs/app.jar
             ls -al /home/ubuntu/greenuniv/build/libs/app.jar
 
             echo "==> reload & restart"
@@ -103,4 +106,4 @@ jobs:
             sudo systemctl status backend.service --no-pager
 
             echo "==> last logs"
-            sudo journalctl -u backend.service -n 80 --no-pager
+            sudo journalctl -u backend.service -n 120 --no-pager
