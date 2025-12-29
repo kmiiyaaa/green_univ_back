@@ -1,48 +1,82 @@
-name: Deploy Backend to EC2
+name: Backend CI/CD
 
 on:
   push:
-    branches: "km-251222-build"   # 배포 브랜치로 바꾸세요 (예: km-build)
+    branches:
+      - km-251222-build
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v3
         with:
-          distribution: temurin
           java-version: "17"
+          distribution: "temurin"
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      - name: Create application.yml
+        run: |
+          mkdir -p src/main/resources
+          cat <<EOF > src/main/resources/application.yml
+          server:
+            port: 8888
+          spring:
+            jackson:
+              time-zone: Asia/Seoul
+            datasource:
+              driver-class-name: com.mysql.cj.jdbc.Driver
+              url: ${{ secrets.MYSQL_URL }}
+              username: admin
+              password: ${{ secrets.MYSQL_PASSWORD }}
+            jpa:
+              hibernate:
+                ddl-auto: update
+            web:
+              error:
+                include-exception: true
+                include-stacktrace: always
+          jwt:
+            secret: ${{ secrets.JWT_SECRET }}
 
-      - name: Build (skip tests)
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          app:
+            ai:
+              mistral:
+                api-key: ${{ secrets.MISTRAL_API_KEY }}
+                url: ""https://api.mistral.ai/v1""
+              gemini:
+                api-key: ${{ secrets.GEMINI_API_KEY }}
+               url: "https://generativelanguage.googleapis.com/v1beta"
+          EOF
+
+      - name: Grant execute permission for Gradle
+        run: chmod +x ./gradlew
+
+      - name: Build Spring Boot
         run: ./gradlew clean build -x test
 
-      - name: Copy jar to EC2
-        uses: appleboy/scp-action@v0.1.7
+      - name: Copy Jar to EC2
+        uses: appleboy/scp-action@v0.1.5
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          username: ubuntu
+          key: ${{ secrets.EC2_KEY }}
           source: "build/libs/*.jar"
-          target: "/tmp"
+          target: "/home/ubuntu/greenuniv/build/libs/"
+          strip_components: 2
 
-      - name: Restart service on EC2
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Restart backend service
+        uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          username: ubuntu
+          key: ${{ secrets.EC2_KEY }}
           script: |
-            set -e
-            JAR=$(ls -t /tmp/*.jar | head -n 1)
-            sudo mkdir -p /opt/greenuniv
-            sudo cp "$JAR" /opt/greenuniv/app.jar
-            sudo systemctl restart ${{ secrets.SERVICE_NAME }}
-            sudo systemctl status ${{ secrets.SERVICE_NAME }} --no-pager
+            sudo systemctl daemon-reload
+            sudo systemctl restart backend.service
+            sudo systemctl status backend.service --no-pager
