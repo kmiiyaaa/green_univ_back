@@ -1,9 +1,8 @@
-name: Deploy Frontend to S3
+name: Deploy Backend to EC2
 
 on:
   push:
-    branches:
-      - km-251222-build
+    branches: "km-251222-build"   # 배포 브랜치로 바꾸세요 (예: km-build)
 
 jobs:
   deploy:
@@ -13,27 +12,37 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
         with:
-          node-version: 18
-          cache: npm
+          distribution: temurin
+          java-version: "17"
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
-      - name: Build
-        run: npm run build
+      - name: Build (skip tests)
+        run: ./gradlew clean build -x test
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Copy jar to EC2
+        uses: appleboy/scp-action@v0.1.7
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "build/libs/*.jar"
+          target: "/tmp"
 
-      - name: Upload to S3
-        run: aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }} --delete
-
-      - name: Invalidate CloudFront cache
-        run: aws cloudfront create-invalidation --distribution-id "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" --paths "/*"
+      - name: Restart service on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            JAR=$(ls -t /tmp/*.jar | head -n 1)
+            sudo mkdir -p /opt/greenuniv
+            sudo cp "$JAR" /opt/greenuniv/app.jar
+            sudo systemctl restart ${{ secrets.SERVICE_NAME }}
+            sudo systemctl status ${{ secrets.SERVICE_NAME }} --no-pager
