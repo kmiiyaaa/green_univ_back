@@ -75,18 +75,7 @@ public class CounselingScheduleController {
         return ResponseEntity.ok().build();
     }
 
-//    @GetMapping("/riskStu") // 교수 - 이번 학기 내 담당 위험 학생 조회 (과목 별)
-//    @PreAuthorize("hasRole('PROFESSOR')")
-//    public ResponseEntity<?> getMyRiskStu(@AuthenticationPrincipal CustomUserDetails principal) {
-//        if (principal == null || !Objects.equals(principal.getUserRole(), "professor")) {
-//            throw new CustomRestfullException("권한이 없는 페이지입니다.", HttpStatus.UNAUTHORIZED);
-//        }
-//
-//        Long professorId = principal.getId(); // 로그인 교수
-//        List<DropoutRisk> riskStuList = riskStudentService.getRiskStudents(professorId);
-//
-//        return ResponseEntity.ok(riskStuList);
-//    }
+
     @GetMapping("/riskStu") // 교수 - 이번 학기 내 담당 위험 학생 조회 (과목 별)
     @PreAuthorize("hasRole('PROFESSOR')")
     public ResponseEntity<?> getMyRiskStu(@AuthenticationPrincipal CustomUserDetails principal) {
