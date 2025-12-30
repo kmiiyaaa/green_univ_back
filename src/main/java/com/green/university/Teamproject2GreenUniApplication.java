@@ -11,15 +11,17 @@ import java.util.TimeZone;
 @EnableScheduling
 public class Teamproject2GreenUniApplication {
 
-    // 한국시간
-    @PostConstruct
-    public void started() {
-        // 애플리케이션의 기본 시간대를 한국(KST)으로 설정
-        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Seoul"));
-    }
+
 
     public static void main(String[] args) {
         SpringApplication.run(Teamproject2GreenUniApplication.class, args);
     }
+
+    // 한국시간
+//    @PostConstruct
+//    public void started() {
+//        // 애플리케이션의 기본 시간대를 한국(KST)으로 설정
+//        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Seoul"));
+//    }
 
 }
