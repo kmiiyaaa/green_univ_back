@@ -89,7 +89,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         //config.setAllowedOrigins(List.of("http://localhost:5173")); // 추후 s3 bucket 주소도 추가해야함
-        config.setAllowedOrigins(List.of("https://d28gjyhses04vx.cloudfront.net")); // cloudfront주소(프론트배포된)
+        config.setAllowedOrigins(List.of("https://d28gjyhses04vx.cloudfront.net")); // cloudfront주소
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
