@@ -12,7 +12,9 @@ public class Define {
 	// 이미지 처리 관련
 	// 1KB = 1024byte
 	// 1MB = 1024*1024 = 1,048,476 byte
-	public final static String UPLOAD_DIRECTORY = "C:\\spring_upload\\universityManagement\\upload";
+	//public final static String UPLOAD_DIRECTORY = "C:\\spring_upload\\universityManagement\\upload"; 로컬용 다운로드 경로
+    public final static String UPLOAD_DIRECTORY = "/home/ubuntu/uploads"; // 배포용 다운로드 경로
+
 
 	public final static Long MAX_FILE_SIZE = 1024L * 1024 * 20;
 
