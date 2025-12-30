@@ -320,8 +320,8 @@ public class GradeService {
             sumGrades += subjectGrades;
 
             // 성적이 있는 과목만 "이수"로 간주
-            if (grade != null && grade.getGradePoint() != null) {
-                myCredits += subjectGrades;
+            if (grade != null && ss.getCredits() != null) {
+                myCredits +=  ss.getCredits();
                 totalWeighted += subjectGrades * grade.getGradePoint();
                 totalGrades += subjectGrades;
             }
