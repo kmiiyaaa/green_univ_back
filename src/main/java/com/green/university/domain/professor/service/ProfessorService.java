@@ -211,8 +211,10 @@ public class ProfessorService {
         // 8. 저장
         stuSubDetailRepository.save(detail);
         stuSubRepository.save(stuSub);
-        // 9. 최종 성적 가지고 이수학점 계산
-        stuSubService.updateCreditsFromLetterGrade(studentId, subjectId);
+        // 9. 최종 성적 가지고 이수학점 계산 (절대평가 전용)
+        if(numOfStudent < 20) {
+            stuSubService.updateCreditsFromLetterGrade(studentId, subjectId);
+        }
     }
 
 
