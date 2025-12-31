@@ -144,7 +144,7 @@ public class PortalCatalog {
                         "시험/방학/수강정정/등록기간 등 주요 학사일정을 확인하는 메뉴입니다.",
                         List.of("포털 > 학사 정보 > 학사일정"),
                         List.of(new ChatResponseDto.Link("학사일정 바로가기", "/schedule")),
-                        List.of("학사","학사일정", "학사 일정", "일정", "스케줄","학사", "schedule", "calendar"),
+                        List.of("학사일정", "학사 일정", "일정", "스케줄","학사", "schedule", "calendar"),
                         List.of("student", "staff", "professor")
                 ),
 

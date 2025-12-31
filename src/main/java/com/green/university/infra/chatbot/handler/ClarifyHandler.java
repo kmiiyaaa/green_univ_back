@@ -23,11 +23,11 @@ public class ClarifyHandler implements ChatHandler {
 
         List<ChatResponseDto.Link> links = new ArrayList<>();
 
-        // ✅ 공통(누구나)
+        // 공통(누구나)
         links.add(new ChatResponseDto.Link("학사일정 조회", "/schedule"));
         links.add(new ChatResponseDto.Link("공지사항", "/notice"));
 
-        // ✅ 교직원 전용 선택지(실제 존재하는 라우트 위주로)
+        // 교직원 전용 선택지(실제 존재하는 라우트 위주로)
         if ("staff".equals(role)) {
             links.add(new ChatResponseDto.Link("수강신청 기간 설정", "/sugang/period"));
 

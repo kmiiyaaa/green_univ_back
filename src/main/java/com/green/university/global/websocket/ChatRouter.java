@@ -7,6 +7,7 @@ import com.green.university.infra.chatbot.intent.ChatIntent;
 import com.green.university.infra.chatbot.intent.ChatRouteResult;
 import com.green.university.infra.chatbot.intent.RouteMode;
 import com.green.university.infra.chatbot.service.MistralClientService;
+import com.green.university.infra.chatbot.util.RoleNormalizer; // ✅ 추가
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -28,6 +29,18 @@ public class ChatRouter {
     // 기존 route(String message)만 쓰는 구조였다면 여기서 오버로드로 받아도 됨
     public ChatRouteResult route(String message, String userRole) {
         String m = normalize(message);
+        String role = RoleNormalizer.normalize(userRole); // ✅ role 정규화
+
+        // ✅ [중요] 교직원(staff)이 "학사"처럼 넓게 입력하면
+        // 1순위 ruleMatch에서 곧바로 SCHEDULE_LIST로 NAVIGATE 확정되기 쉬움
+        // -> staff는 학사일정(조회)도 맞지만 "학사 등록/관리"도 함께 선택지로 보여주는 게 UX가 좋음
+        // -> 그래서 ruleMatch 전에 CLARIFY로 선처리
+        if ("staff".equals(role) && m.contains(normalize("학사")) && !m.contains(normalize("학사일정"))) {
+            ChatRouteResult r = new ChatRouteResult(ChatIntent.UNKNOWN, "staff ambiguous '학사' -> clarify");
+            r.setConfidence(0.4);
+            r.setMode(RouteMode.CLARIFY);
+            return r;
+        }
 
         // 규칙(키워드) 기반 라우팅: 가장 정확하고 빠름
         // 긴 키워드 우선 매칭(“휴학 내역”이 “휴학”보다 우선)
@@ -40,7 +53,11 @@ public class ChatRouter {
         }
 
         // 2) 넓은 키워드는 OUT이 아니라 CLARIFY로 (가장 빠른 UX 개선)
-        if (containsAny(m, List.of("학사", "등록", "유저등록", "사용자등록", "계정생성", "학생등록", "교수등록", "교직원등록"))) {
+        // - 여기로 내려왔다는 건, catalog의 구체 키워드로는 못 잡았다는 뜻
+        // - “등록” 같은 단어는 여러 페이지 후보가 있으므로 CLARIFY로 선택지 제공
+        if (containsAny(m, List.of(
+                "등록", "유저등록", "사용자등록", "계정생성", "학생등록", "교수등록", "교직원등록"
+        ))) {
             ChatRouteResult r = new ChatRouteResult(ChatIntent.UNKNOWN, "ambiguous scope -> clarify");
             r.setConfidence(0.4);
             r.setMode(RouteMode.CLARIFY);
@@ -149,6 +166,4 @@ public class ChatRouter {
         }
         return false;
     }
-
-
 }
