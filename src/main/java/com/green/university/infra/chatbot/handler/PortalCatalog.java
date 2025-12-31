@@ -416,10 +416,10 @@ public class PortalCatalog {
                 ),
                 new Topic(
                         ChatIntent.USER_CREATE,
-                        "사용자 등록 안내(교직원)",
+                        "유저 등록 안내(교직원)",
                         "학생/교수/교직원 계정을 등록하는 메뉴입니다.",
-                        List.of("포털 > 등록 > 사용자 등록"),
-                        List.of(new ChatResponseDto.Link("사용자 등록 바로가기", "/user/create")),
+                        List.of("포털 > 학사 관리 > 유저 등록"),
+                        List.of(new ChatResponseDto.Link("유저 등록 바로가기", "/user/create")),
                         List.of("유저등록","유저 등록","사용자등록","사용자 등록","계정등록","계정 등록","학생등록","교수등록","교직원등록"),
                         List.of("staff")
                 )
