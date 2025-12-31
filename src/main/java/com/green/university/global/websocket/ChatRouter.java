@@ -31,6 +31,16 @@ public class ChatRouter {
         String m = normalize(message);
         String role = RoleNormalizer.normalize(userRole); // ✅ role 정규화
 
+        // ✅ [중요] "등록금"은 "등록"+"금"이라서,
+        // 아래 '등록' 애매 분기로 빠지거나, catalog ruleHit로 학생용 TUITION_LIST가 잡힐 수 있음.
+        // => ruleMatch 전에 먼저 CLARIFY로 선처리해서 ClarifyHandler(등록금 선택지)로 보내자.
+        if (m.contains(normalize("등록금")) || m.contains(normalize("고지서"))) {
+            ChatRouteResult r = new ChatRouteResult(ChatIntent.UNKNOWN, "tuition ambiguous -> clarify");
+            r.setConfidence(0.6);
+            r.setMode(RouteMode.CLARIFY);
+            return r;
+        }
+
         // ✅ [중요] 교직원(staff)이 "학사"처럼 넓게 입력하면
         // 1순위 ruleMatch에서 곧바로 SCHEDULE_LIST로 NAVIGATE 확정되기 쉬움
         // -> staff는 학사일정(조회)도 맞지만 "학사 등록/관리"도 함께 선택지로 보여주는 게 UX가 좋음
@@ -44,7 +54,8 @@ public class ChatRouter {
 
         // 규칙(키워드) 기반 라우팅: 가장 정확하고 빠름
         // 긴 키워드 우선 매칭(“휴학 내역”이 “휴학”보다 우선)
-        ChatIntent ruleHit = ruleMatchByCatalog(m);
+        // ✅ role 기반으로만 ruleMatch 하도록 변경
+        ChatIntent ruleHit = ruleMatchByCatalog(m, role);
         if (ruleHit != null) {
             ChatRouteResult r = new ChatRouteResult(ruleHit, "rule:catalog_keyword");
             r.setConfidence(1.0);
@@ -55,6 +66,7 @@ public class ChatRouter {
         // 2) 넓은 키워드는 OUT이 아니라 CLARIFY로 (가장 빠른 UX 개선)
         // - 여기로 내려왔다는 건, catalog의 구체 키워드로는 못 잡았다는 뜻
         // - “등록” 같은 단어는 여러 페이지 후보가 있으므로 CLARIFY로 선택지 제공
+        // ✅ "등록금"은 위에서 이미 CLARIFY 처리했으므로 여기서는 등록금 제외
         if (containsAny(m, List.of(
                 "등록", "유저등록", "사용자등록", "계정생성", "학생등록", "교수등록", "교직원등록"
         ))) {
@@ -74,7 +86,7 @@ public class ChatRouter {
                         "{ \"intent\": \"<INTENT>\", \"reason\": \"<짧은 근거>\" }\n\n" +
                         "규칙:\n" +
                         "- 포털 기능과 무관하면 intent=OUT_OF_SCOPE\n" +
-                        "- 애매하면 OUT_OF_SCOPE\n" +
+                        "- 애매하면 intent=UNKNOWN\n" +   // ✅ OUT_OF_SCOPE ❌ -> UNKNOWN ✅
                         "- 이유는 짧게\n";
 
         String userPrompt = "사용자 질문: " + message;
@@ -84,20 +96,28 @@ public class ChatRouter {
         // 4) JSON 파싱 -> ChatRouteResult
         try {
             JsonNode node = om.readTree(json);
-            String intentStr = node.path("intent").asText("OUT_OF_SCOPE");
+            String intentStr = node.path("intent").asText("UNKNOWN");
             String reason = node.path("reason").asText("");
 
             ChatIntent intent;
             try {
                 intent = ChatIntent.valueOf(intentStr);
             } catch (Exception e) {
-                intent = ChatIntent.OUT_OF_SCOPE;
+                intent = ChatIntent.UNKNOWN;
             }
 
             if (intent == ChatIntent.OUT_OF_SCOPE) {
                 ChatRouteResult r = new ChatRouteResult(ChatIntent.OUT_OF_SCOPE, reason);
                 r.setConfidence(0.0);
                 r.setMode(RouteMode.OUT_OF_SCOPE);
+                return r;
+            }
+
+            // ✅ UNKNOWN이면 ClarifyHandler로 보내서 선택지(links) 뜨게
+            if (intent == ChatIntent.UNKNOWN) {
+                ChatRouteResult r = new ChatRouteResult(ChatIntent.UNKNOWN, reason);
+                r.setConfidence(0.4);
+                r.setMode(RouteMode.CLARIFY);
                 return r;
             }
 
@@ -117,11 +137,11 @@ public class ChatRouter {
 
     // catalog 에있는 topic 키워드로 intent 매칭
     //  "휴학 내역" > "휴학"처럼 긴 표현 우선
-    private ChatIntent ruleMatchByCatalog(String normalizedMessage) {
+    // ✅ role 기반 필터 적용
+    private ChatIntent ruleMatchByCatalog(String normalizedMessage, String role) {
 
-        // 불변 리스트(List.of 등) 정렬하면 바로 터짐
-        // 반드시 가변 리스트로 복사해서 정렬
-        List<PortalCatalog.Topic> topics = new ArrayList<>(catalog.topicList());
+        // ✅ role에 맞는 topic만 대상으로
+        List<PortalCatalog.Topic> topics = new ArrayList<>(catalog.topicListByRole(role));
 
         // Topic들을 키워드 최대 길이 기준으로 정렬(긴 표현 우선)
         topics.sort(
