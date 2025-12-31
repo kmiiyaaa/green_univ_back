@@ -144,7 +144,7 @@ public class PortalCatalog {
                         "시험/방학/수강정정/등록기간 등 주요 학사일정을 확인하는 메뉴입니다.",
                         List.of("포털 > 학사 정보 > 학사일정"),
                         List.of(new ChatResponseDto.Link("학사일정 바로가기", "/schedule")),
-                        List.of("학사일정", "학사 일정", "일정", "스케줄", "schedule", "calendar"),
+                        List.of("학사","학사일정", "학사 일정", "일정", "스케줄","학사", "schedule", "calendar"),
                         List.of("student", "staff", "professor")
                 ),
 
@@ -412,6 +412,15 @@ public class PortalCatalog {
                         List.of("포털 > 등록 > 단대별 등록금"),
                         List.of(new ChatResponseDto.Link("단대별 등록금 바로가기", "/admin/colltuit")),
                         List.of("단대등록금", "단대별등록금", "colltuit"),
+                        List.of("staff")
+                ),
+                new Topic(
+                        ChatIntent.USER_CREATE,
+                        "사용자 등록 안내(교직원)",
+                        "학생/교수/교직원 계정을 등록하는 메뉴입니다.",
+                        List.of("포털 > 등록 > 사용자 등록"),
+                        List.of(new ChatResponseDto.Link("사용자 등록 바로가기", "/user/create")),
+                        List.of("유저등록","유저 등록","사용자등록","사용자 등록","계정등록","계정 등록","학생등록","교수등록","교직원등록"),
                         List.of("staff")
                 )
         );

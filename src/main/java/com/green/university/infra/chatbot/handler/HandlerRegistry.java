@@ -12,11 +12,14 @@ public class HandlerRegistry {
     private final PortalHandler portalHandler;
     private final OutOfScopeHandler outOfScopeHandler;
     private final QaHandler qaHandler;
+    private final ClarifyHandler clarifyHandler;
 
-    public HandlerRegistry(PortalHandler portalHandler, OutOfScopeHandler outOfScopeHandler, QaHandler qaHandler) {
+
+    public HandlerRegistry(PortalHandler portalHandler, OutOfScopeHandler outOfScopeHandler, QaHandler qaHandler, ClarifyHandler clarifyHandler ) {
         this.portalHandler = portalHandler;
         this.outOfScopeHandler = outOfScopeHandler;
         this.qaHandler = qaHandler;
+        this.clarifyHandler = clarifyHandler;
     }
 
     public ChatHandler get(ChatIntent intent, RouteMode mode) {

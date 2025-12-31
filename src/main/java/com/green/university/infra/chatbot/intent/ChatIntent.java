@@ -54,6 +54,7 @@ public enum ChatIntent {
     ADMIN_ROOM,
     ADMIN_SUBJECT,
     ADMIN_COLLTUIT,
+    USER_CREATE,
 
     // 범위 밖
     OUT_OF_SCOPE,

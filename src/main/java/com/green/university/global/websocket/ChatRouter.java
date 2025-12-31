@@ -39,6 +39,14 @@ public class ChatRouter {
             return r;
         }
 
+        // 2) 넓은 키워드는 OUT이 아니라 CLARIFY로 (가장 빠른 UX 개선)
+        if (containsAny(m, List.of("학사", "등록", "유저등록", "사용자등록", "계정생성", "학생등록", "교수등록", "교직원등록"))) {
+            ChatRouteResult r = new ChatRouteResult(ChatIntent.UNKNOWN, "ambiguous scope -> clarify");
+            r.setConfidence(0.4);
+            r.setMode(RouteMode.CLARIFY);
+            return r;
+        }
+
         // 3) Mistral에게 intent 분류 요청(애매한 케이스만)
         String systemPrompt =
                 "너는 '그린대학교 포털' 안내 챗봇의 라우터다.\n" +
@@ -141,4 +149,6 @@ public class ChatRouter {
         }
         return false;
     }
+
+
 }
