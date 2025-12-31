@@ -27,8 +27,16 @@ public class ClarifyHandler implements ChatHandler {
             return clarifyForAcademic(role);
         }
 
-        // “등록”을 치면 등록 관련만 묶어서 보여주자 (교직원 전용 UX)
-        if (m.contains(normalize("등록")) || containsAny(m, List.of("유저등록", "사용자등록", "계정등록", "학생등록", "교수등록", "교직원등록"))) {
+        // 등록금/고지서는 등록으로 오인되기 쉬우니 먼저 처리
+        // - 등록금 = 등록 + 금 이라서 아래 '등록' 분기로 빠지면 등록 메뉴가 다 나와버림
+        if (m.contains(normalize("등록금")) || m.contains(normalize("고지서"))) {
+            return clarifyForTuition(role);
+        }
+
+        // 등록을 치면 등록 관련만 묶어서 보여주자 (교직원 전용 UX)
+        // “등록금”은 위에서 이미 처리했으니 제외
+        if ((m.contains(normalize("등록")) && !m.contains(normalize("등록금")))
+                || containsAny(m, List.of("유저등록", "사용자등록", "계정등록", "학생등록", "교수등록", "교직원등록"))) {
             return clarifyForRegister(role);
         }
 
@@ -59,6 +67,34 @@ public class ClarifyHandler implements ChatHandler {
         // 학생/교수는 학사 범주에서 자주 묻는 것만 살짝 얹기(원하면 삭제 가능)
         if ("student".equals(role)) {
             links.add(new ChatResponseDto.Link("수강신청", "/sugang"));
+        }
+
+        return new ChatResponseDto(answer, links, List.of());
+    }
+
+
+    // 등록금 관련
+    private ChatResponseDto clarifyForTuition(String role) {
+        String answer =
+                "등록금 관련해서 어떤 걸 찾으세요? 🙂\n" +
+                        "아래에서 선택해 주세요!";
+
+        List<ChatResponseDto.Link> links = new ArrayList<>();
+
+        // 교직원: 등록금 고지서 생성/발송 + 단대별 등록금 조회/등록(관리)
+        if ("staff".equals(role)) {
+            links.add(new ChatResponseDto.Link("등록금 고지서 생성/발송", "/tuition/bill"));
+
+            // 단대 등록금 조회/등록은 보통 /admin/colltuit 한 페이지에서 관리(너 코드 기준)
+            links.add(new ChatResponseDto.Link("단대별 등록금 조회/등록", "/admin/colltuit"));
+
+            // 필요하면 나중에 실제 페이지가 있을 때만 추가해도 됨
+            // links.add(new ChatResponseDto.Link("등록금 발송 내역/현황", "/tuition/bill/list"));
+        } else {
+            // 학생: 고지서 조회/납부 + 납부 내역
+            // (교수/게스트가 등록금 문의해도 학생용 안내 정도는 무방)
+            links.add(new ChatResponseDto.Link("등록금 고지서 조회/납부", "/tuition/payment"));
+            links.add(new ChatResponseDto.Link("등록금 납부 내역", "/tuition"));
         }
 
         return new ChatResponseDto(answer, links, List.of());
