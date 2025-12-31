@@ -41,12 +41,14 @@ public class CreateStudentFormDto {
     @NotEmpty(message = "이메일을 입력해 주세요")
 	private String email;
 
-    @NotEmpty(message = "학년을 입력해 주세요")
-    @Pattern(regexp = "^[1-4]$", message = "학년은 1~4만 입력 가능합니다")
-	private String grade;
+    @NotNull(message = "학년을 입력해 주세요")
+    @Min(value = 1, message = "학년은 1~4만 가능합니다")
+    @Max(value = 4, message = "학년은 1~4만 가능합니다")
+    private Long grade;
 
-    @NotEmpty(message = "학기를 입력해 주세요")
-    @Pattern(regexp = "^[1-2]$", message = "학기는 1 또는 2만 입력 가능합니다")
-	private String semester;
+    @NotNull(message = "학기를 입력해 주세요")
+    @Min(value = 1, message = "학기는 1 또는 2만 가능합니다")
+    @Max(value = 2, message = "학기는 1 또는 2만 가능합니다")
+    private Long semester;
 	
 }
