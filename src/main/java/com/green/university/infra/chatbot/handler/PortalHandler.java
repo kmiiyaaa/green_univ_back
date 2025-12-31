@@ -36,10 +36,21 @@ public class PortalHandler implements ChatHandler {
 
         // "한 Topic = 한 intent"라서
         // 질문이 “학사일정”이면 “학사일정”만 버튼으로 내려감
+//        String answer =
+//                topic.title() + " 😊\n\n" +
+//                        "아래 메뉴에서 확인할 수 있어요.\n" +
+//                        "원하시면 아래 ‘바로가기’ 버튼을 눌러 이동해 주세요!";
+
+        String pathBlock = "";
+        if (topic.references() != null && !topic.references().isEmpty()) {
+            pathBlock = "\n\n📌 경로\n- " + String.join("\n- ", topic.references());
+        }
+
         String answer =
                 topic.title() + " 😊\n\n" +
                         "아래 메뉴에서 확인할 수 있어요.\n" +
-                        "원하시면 아래 ‘바로가기’ 버튼을 눌러 이동해 주세요!";
+                        "원하시면 아래 ‘바로가기’ 버튼을 눌러 이동해 주세요!" +
+                        pathBlock;
 
         return new ChatResponseDto(answer, topic.links(), topic.references());
     }
